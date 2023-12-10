@@ -4,7 +4,11 @@
 
 #define REDEYE_RX_BUFFER_SIZE 16
 #define REDEYE_TX_BUFFER_SIZE 16
-#define REDEYE_USE_TIMER_2 // Defaults to timer 1
+// #define REDEYE_USE_TIMER_2 // Defaults to timer 1
+
+#ifndef REDEYE_RX_INTERRUPT
+	#define REDEYE_RX_INTERRUPT INT0
+#endif
 
 class RedEye : public Stream {
 public:
@@ -47,11 +51,18 @@ private:
 	};
 	PrintModes dataMode = text;
 	RxModes rxMode = passthrough;
-	byte rxBuffer[REDEYE_RX_BUFFER_SIZE];
+	volatile uint8_t rxBuffer[REDEYE_RX_BUFFER_SIZE];
 	uint8_t rxReadIndex = 0;
 	volatile uint8_t rxWriteIndex = 0;
-	uint8_t overflowCounter = 0;
-	uint8_t _rxPin;
+	bool _rxInverseLogic;
+	int _rxInterrupt;
+
+	volatile uint8_t rxHalfBitCounter = 0;
+	volatile uint8_t rxBitCounter = 0;
+	volatile uint8_t rxPulses = 0;
+	volatile uint8_t rxBit = 0;
+	volatile uint16_t rxByte = 0;
+	volatile uint8_t rxBitsRecieved = 0;
 
 	uint16_t txBuffer[REDEYE_TX_BUFFER_SIZE]; // RedEye bytes are 11 bits. Rip RAM usage
 	volatile uint8_t txReadIndex = 0;
@@ -75,4 +86,8 @@ private:
 	bool calculateParity(unsigned);
 	void loadNextByte();
 	void pulseInterrupt();
+	void rxInterrupt();
+	void rxHalfBitFinished();
+	void rxBitFinished();
+	bool addToRxBuffer(byte);
 };

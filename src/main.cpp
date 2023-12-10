@@ -1,8 +1,8 @@
 #include <Arduino.h>
-#include <RedEyeSender.h>
+#include <RedEye.h>
 
 byte nextByte = 0;
-RedEye redEye(NOT_A_PIN);
+RedEye redEye(REDEYE_RX_INTERRUPT); // Defaults to INT0 unless our build flags say otherwise
 
 void setup() {
 	Serial.begin(2400);
@@ -15,12 +15,10 @@ void setup() {
 
 
 void loop() {
-	redEye.println("String with more than 16 characters testing how long the delay is when sending very long data");
+	while (redEye.available()) {
+		Serial.print(redEye.read());
+	}
+	redEye.println("Test");
+	Serial.println("Sent");
 	delay(1000);
-	// if (nextByte == 0) {
-	// 	nextByte = Serial.read(); // Get the next byte
-	// }
-	// if (redEye.write(nextByte) == true) { // Send the next byte
-	// 	nextByte = 0;
-	// }
 }
