@@ -121,64 +121,79 @@ bool RedEye::addToRxBuffer(byte character) {
 }
 
 void RedEye::rxInterrupt() {
-	if (rxHalfBitCounter == 0) {
-		rxHalfBitCounter = 14;
+	if (rxPulses == 0) {
+		// Start of burst
+		rxBurstTimer = 10;
+		rxHalfBitTimer = 13;
+		rxBurstRecieved = false;
 	}
 	rxPulses ++;
 }
 
+void RedEye::rxByteFinished() {
+	addToRxBuffer(rxByte&0xff);
+	if ((calculateParity(rxByte & 0b10001011)!=((rxByte>>8)&1)) ||
+	    (calculateParity(rxByte & 0b11010101)!=((rxByte>>9)&1)) ||
+	    (calculateParity(rxByte & 0b11100110)!=((rxByte>>10)&1)) ||
+	    (calculateParity(rxByte & 0b01111000)!=((rxByte>>11)&1)) ) {
+		// Bit has errors
+		//addToRxBuffer(127); // Error character
+
+	} else {
+		//addToRxBuffer(rxByte & 0xff);
+	}
+	rxByte = 0;
+	rxByteBits = 0;
+}
+
 void RedEye::rxBitFinished() {
 	uint8_t bit = rxBit & 0b11;
-	rxByte = rxByte << 1;
-	rxBitCounter = 2;
-	rxBitsRecieved ++;
-	if (bit == 0b10) { // This is a 1
-		rxByte+=1;
-	} else if (bit == 0b01) { // This is a 0
-	} else { // This is an error. Throw away this byte
-		rxByte = 0;
-		addToRxBuffer(127);
-		rxBitCounter = 0;
-		rxBitsRecieved = 0;
+	rxByte = (rxByte<<1 & 0x7ff);
+	if (bit == 0b10) {
+		rxByte |= 1;
+		rxByteBits ++;
+	} else if (bit == 0b01) {
+		rxByteBits ++;
 	}
-	if (rxBitsRecieved == 11) {
-		// We have ourselves a complete byte!
-		// Let's try calculating parity in the interrupt
-		// See if it breaks things
-		if ((calculateParity(rxByte & 0b10001011)!=((rxByte>>8)&1)) ||
-		    (calculateParity(rxByte & 0b11010101)!=((rxByte>>9)&1)) ||
-		    (calculateParity(rxByte & 0b11100110)!=((rxByte>>10)&1)) ||
-		    (calculateParity(rxByte & 0b01111000)!=((rxByte>>11)&1)) ) {
-			// Bit has errors
-			addToRxBuffer(127); // Error character
-		} else {
-			addToRxBuffer(rxByte & 0xff);
-		};
-		rxByte = 0;
-		rxBitCounter = 0;
-		rxBitsRecieved = 0;
+	if (rxByteBits == 12) {
+		rxByteFinished();
 	}
 }
 
 void RedEye::rxHalfBitFinished() {
-	rxBit=rxBit<<1;
-	if (rxPulses >= 5 && rxPulses <= 8) {
-		// We have ourselves a burst!
-		rxBit += 1;
+	digitalWrite(10, HIGH);
+	rxBit=(rxBit<<1) & 0b111; // We only care about the 3 most recent half-bits
+	if (rxBurstRecieved == true) {
+		rxBit |= 1;
+		rxBurstRecieved = false;
 	}
-	rxPulses = 0;
-	if (rxBitCounter<0) {
-		rxBitCounter--;
-		if (rxBitCounter == 0) {
+	if (rxBit == 0b111) {
+		// This is a start bit
+		rxByte = 0;
+		rxByteBits = 0;
+		rxBitTimer = 2;
+		return;
+	}
+	
+	if (rxBitTimer>0) {
+		rxBitTimer --;
+		if (rxBitTimer == 0) {
 			rxBitFinished();
+			rxBitTimer = 2;
 		}
 	}
-	if ((rxBit & 0b111) == 0b111) {
-		// We have ourselves a Byte!
-		rxBit = 0;
-		rxBitsRecieved = 0;
-		rxBitCounter = 2;
+}
+
+void RedEye::rxEndOfBurst() {
+	if (rxPulses>=5 && rxPulses<=9) {
+		// It's a real burst!
+		rxBurstRecieved = true;
+	} else {
+		// Invalid burst :(
+		rxHalfBitTimer = 0;
 	}
+	rxBurstTimer = 0;
+	rxPulses = 0;
 }
 
 void RedEye::sendBurst() {
@@ -234,10 +249,17 @@ void RedEye::pulseInterrupt() {
 	}
 
 /************ RX ************/
-	if (rxHalfBitCounter>0) {
-		rxHalfBitCounter--;
-		if (rxHalfBitCounter==0) {
+	if (rxBurstTimer>0) {
+		rxBurstTimer--;
+		if (rxBurstTimer==0) {
+			rxEndOfBurst();
+		}
+	}
+	if (rxHalfBitTimer>0) {
+		rxHalfBitTimer--;
+		if (rxHalfBitTimer==0) {
 			rxHalfBitFinished();
+			rxHalfBitTimer = 13;
 		}
 	}
 }

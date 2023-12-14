@@ -12,22 +12,11 @@
 
 class RedEye : public Stream {
 public:
-enum PrintModes {
-		text,
-		graphics
-	};
-	enum RxModes {
-		passthrough, // Gives bytes as recieved
-		interpreter, // Converts characters to UTF-8
-		analyser // Gives pulse timings instead of actual data
-	};
 	RedEye(const uint8_t rxPin, bool txInverseLogic = true, bool rxInverseLogic = true);
 	void begin();
 	void end();
 
 	void setSlowMode(bool); // Set to true when using a real printer
-	void setRxMode(RxModes);
-	PrintModes getCurrentPrintMode();
 
 	size_t write(uint8_t);
 	int available();
@@ -44,25 +33,20 @@ enum PrintModes {
 
 
 private:	
-	enum SpecialCodes {
-		linefeed = 4,
-		crlf = 10,
-		esc = 27
-	};
-	PrintModes dataMode = text;
-	RxModes rxMode = passthrough;
 	volatile uint8_t rxBuffer[REDEYE_RX_BUFFER_SIZE];
 	uint8_t rxReadIndex = 0;
 	volatile uint8_t rxWriteIndex = 0;
 	bool _rxInverseLogic;
 	int _rxInterrupt;
 
-	volatile uint8_t rxHalfBitCounter = 0;
-	volatile uint8_t rxBitCounter = 0;
+	volatile uint8_t rxBurstTimer = 0;
+	volatile bool rxBurstRecieved = false;
+	volatile uint8_t rxHalfBitTimer = 0;
+	volatile uint8_t rxByteBits = 0;
+	volatile uint8_t rxBitTimer = 0;
 	volatile uint8_t rxPulses = 0;
 	volatile uint8_t rxBit = 0;
 	volatile uint16_t rxByte = 0;
-	volatile uint8_t rxBitsRecieved = 0;
 
 	uint16_t txBuffer[REDEYE_TX_BUFFER_SIZE]; // RedEye bytes are 11 bits. Rip RAM usage
 	volatile uint8_t txReadIndex = 0;
@@ -76,6 +60,7 @@ private:
 	byte txByte = 0;
 	volatile uint8_t txBytesInCurrentLine = 0;
 	byte txLastLineFeed = 10;
+	
 	bool slowMode = false;
 	unsigned long lastLineTime = 0;
 	volatile uint8_t slowSendLinesAvailable = 4;
@@ -87,7 +72,9 @@ private:
 	void loadNextByte();
 	void pulseInterrupt();
 	void rxInterrupt();
+	void rxEndOfBurst();
 	void rxHalfBitFinished();
 	void rxBitFinished();
+	void rxByteFinished();
 	bool addToRxBuffer(byte);
 };

@@ -1,13 +1,13 @@
 #include <Arduino.h>
 #include <RedEye.h>
 
-byte nextByte = 0;
-RedEye redEye(REDEYE_RX_INTERRUPT); // Defaults to INT0 unless our build flags say otherwise
+RedEye redEye(INT1, false); // Defaults to INT0 unless our build flags say otherwise
 
 void setup() {
+	pinMode(10, OUTPUT);
 	Serial.begin(2400);
 	redEye.begin();
-	delay(2000);
+	while (!Serial);
 	Serial.println("Ready!");
 }
 
@@ -15,10 +15,10 @@ void setup() {
 
 
 void loop() {
+	digitalWrite(10, LOW);
 	while (redEye.available()) {
-		Serial.print(redEye.read());
+		Serial.println(redEye.read());
 	}
-	redEye.println("Test");
-	Serial.println("Sent");
+	redEye.println("A");
 	delay(1000);
 }
