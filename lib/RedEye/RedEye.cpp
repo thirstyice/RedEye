@@ -280,16 +280,16 @@ void RedEye::loadNextByte() {
 
 	
 	if (txWriteIndex != txReadIndex) {
-			txByte = txBuffer[txReadIndex];
-			byte character = txByte;
-			if ((character == 4)|| (character == 10)) {
-				slowSendLinesAvailable --;
-			}
-			txBuffer[txReadIndex] = 0;
-			txReadIndex ++;
-			txReadIndex %= REDEYE_TX_BUFFER_SIZE;
-			txBitCounter = 15;
+		txByte = txBuffer[txReadIndex];
+		byte character = txByte;
+		if ((character == 4)|| (character == 10)) {
+			slowSendLinesAvailable --;
 		}
+		txBuffer[txReadIndex] = 0;
+		txReadIndex ++;
+		txReadIndex %= REDEYE_TX_BUFFER_SIZE;
+		txBitCounter = 15;
+	}
 	return;
 }
 
