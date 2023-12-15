@@ -131,24 +131,22 @@ void RedEye::rxInterrupt() {
 }
 
 void RedEye::rxByteFinished() {
-	addToRxBuffer(rxByte&0xff);
 	if ((calculateParity(rxByte & 0b10001011)!=((rxByte>>8)&1)) ||
 	    (calculateParity(rxByte & 0b11010101)!=((rxByte>>9)&1)) ||
 	    (calculateParity(rxByte & 0b11100110)!=((rxByte>>10)&1)) ||
 	    (calculateParity(rxByte & 0b01111000)!=((rxByte>>11)&1)) ) {
 		// Bit has errors
-		//addToRxBuffer(127); // Error character
+		addToRxBuffer(127); // Error character
 
 	} else {
-		//addToRxBuffer(rxByte & 0xff);
+		addToRxBuffer(rxByte & 0xff);
 	}
 	rxByte = 0;
-	rxByteBits = 0;
 }
 
 void RedEye::rxBitFinished() {
 	uint8_t bit = rxBit & 0b11;
-	rxByte = (rxByte<<1 & 0x7ff);
+	rxByte = (rxByte<<1) & 0xfff;
 	if (bit == 0b10) {
 		rxByte |= 1;
 		rxByteBits ++;
@@ -157,11 +155,11 @@ void RedEye::rxBitFinished() {
 	}
 	if (rxByteBits == 12) {
 		rxByteFinished();
+		rxByteBits = 0;
 	}
 }
 
 void RedEye::rxHalfBitFinished() {
-	digitalWrite(10, HIGH);
 	rxBit=(rxBit<<1) & 0b111; // We only care about the 3 most recent half-bits
 	if (rxBurstRecieved == true) {
 		rxBit |= 1;
@@ -169,10 +167,15 @@ void RedEye::rxHalfBitFinished() {
 	}
 	if (rxBit == 0b111) {
 		// This is a start bit
+		rxBit = 0;
 		rxByte = 0;
 		rxByteBits = 0;
 		rxBitTimer = 2;
 		return;
+	} else if (rxBit == 0) {
+		// No data
+		rxBitTimer = 0;
+		rxHalfBitTimer = 0;
 	}
 	
 	if (rxBitTimer>0) {
