@@ -7,7 +7,7 @@ void setup() {
 	pinMode(10, OUTPUT);
 	Serial.begin(2400);
 	redEye.begin();
-	while (!Serial);
+	delay(2000);
 	Serial.println("Ready!");
 }
 
