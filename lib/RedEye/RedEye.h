@@ -57,7 +57,7 @@ private:
 	volatile uint8_t txBitWaitCounter = 0;
 	volatile bool txWaitingBeforeBurst = false;
 	bool _txInverseLogic;
-	byte txByte = 0;
+	volatile uint16_t txByte = 0;
 	volatile uint8_t txBytesInCurrentLine = 0;
 	byte txLastLineFeed = 10;
 	

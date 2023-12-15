@@ -281,7 +281,8 @@ void RedEye::loadNextByte() {
 	
 	if (txWriteIndex != txReadIndex) {
 			txByte = txBuffer[txReadIndex];
-			if ((txByte == 4)|| (txByte == 10)) {
+			byte character = txByte;
+			if ((character == 4)|| (character == 10)) {
 				slowSendLinesAvailable --;
 			}
 			txBuffer[txReadIndex] = 0;
