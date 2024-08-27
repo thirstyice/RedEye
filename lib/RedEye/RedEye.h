@@ -1,6 +1,6 @@
-#include <Arduino.h>
-
 #pragma once
+
+#include <Arduino.h>
 
 #define REDEYE_RX_BUFFER_SIZE 16
 #define REDEYE_TX_BUFFER_SIZE 16
@@ -17,6 +17,7 @@ public:
 	void end();
 
 	void setSlowMode(bool); // Set to true when using a real printer
+	void setTransmitMode(bool);
 
 	size_t write(uint8_t);
 	int available();
@@ -62,6 +63,7 @@ private:
 	byte txLastLineFeed = 10;
 	
 	bool slowMode = false;
+	bool transmitMode = false;
 	unsigned long lastLineTime = 0;
 	volatile uint8_t slowSendLinesAvailable = 4;
 	static RedEye *activeInstance;

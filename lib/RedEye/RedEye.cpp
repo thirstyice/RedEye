@@ -109,6 +109,13 @@ void RedEye::setSlowMode(bool newMode) {
 	slowMode = newMode;
 }
 
+void RedEye::setTransmitMode(bool newMode) {
+	if (newMode == false && transmitMode != false) {
+		flush();
+	}
+	transmitMode = newMode;
+}
+
 bool RedEye::addToRxBuffer(byte character) {
 	if (((rxWriteIndex +1) % REDEYE_RX_BUFFER_SIZE) == rxReadIndex) {
 		rxBuffer[rxWriteIndex] = 134; // Buffer overflow character
@@ -121,6 +128,9 @@ bool RedEye::addToRxBuffer(byte character) {
 }
 
 void RedEye::rxInterrupt() {
+	if (transmitMode == true) {
+		return;
+	}
 	if (rxPulses == 0) {
 		// Start of burst
 		rxBurstTimer = 10;
@@ -228,41 +238,41 @@ void RedEye::bitInterrupt() {
 
 void RedEye::pulseInterrupt() {
 
-/************ TX ************/
-	if (txPulses == 0) {
-		REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP;
-		// Duty cycle = 0%
-	} else {
-		REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP / 2;
-		// Duty cycle = 50%
-		txPulses--;
-	}
-	if (txBitWaitCounter == 0) {
-		bitInterrupt();
-	} else {
-		txBitWaitCounter--;
-	}
-	if (txWaitingBeforeBurst == true) {
-		if (txBurstWaitCounter == 0) {
-			txWaitingBeforeBurst=false;
-			sendBurst();
+	if (transmitMode == true) {
+		if (txPulses == 0) {
+			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP;
+			// Duty cycle = 0%
 		} else {
-			txBurstWaitCounter --;
+			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP / 2;
+			// Duty cycle = 50%
+			txPulses--;
 		}
-	}
-
-/************ RX ************/
-	if (rxBurstTimer>0) {
-		rxBurstTimer--;
-		if (rxBurstTimer==0) {
-			rxEndOfBurst();
+		if (txBitWaitCounter == 0) {
+			bitInterrupt();
+		} else {
+			txBitWaitCounter--;
 		}
-	}
-	if (rxHalfBitTimer>0) {
-		rxHalfBitTimer--;
-		if (rxHalfBitTimer==0) {
-			rxHalfBitFinished();
-			rxHalfBitTimer = 13;
+		if (txWaitingBeforeBurst == true) {
+			if (txBurstWaitCounter == 0) {
+				txWaitingBeforeBurst=false;
+				sendBurst();
+			} else {
+				txBurstWaitCounter --;
+			}
+		}
+	} else {
+		if (rxBurstTimer>0) {
+			rxBurstTimer--;
+			if (rxBurstTimer==0) {
+				rxEndOfBurst();
+			}
+		}
+		if (rxHalfBitTimer>0) {
+			rxHalfBitTimer--;
+			if (rxHalfBitTimer==0) {
+				rxHalfBitFinished();
+				rxHalfBitTimer = 13;
+			}
 		}
 	}
 }
