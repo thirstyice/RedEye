@@ -4,16 +4,11 @@
 
 #define REDEYE_RX_BUFFER_SIZE 16
 #define REDEYE_TX_BUFFER_SIZE 16
-// #define REDEYE_USE_TIMER_2 // Defaults to timer 1
+#define REDEYE_USE_TIMER 1
 
-#ifndef REDEYE_RX_INTERRUPT
-	#define REDEYE_RX_INTERRUPT INT0
-#endif
-
-class RedEye : public Stream {
+class RedEyeClass : public Stream {
 public:
-	RedEye(const uint8_t rxPin, bool txInverseLogic = true, bool rxInverseLogic = true);
-	void begin();
+	void begin(const uint8_t rxPin, const uint8_t txPin, bool rxInverseLogic = true, bool txInverseLogic = true);
 	void end();
 
 	void setSlowMode(bool); // Set to true when using a real printer
@@ -26,19 +21,20 @@ public:
 	void flush();
 
 
-	
+
 	static inline void handleInterrupt();
 	static inline void handleTimer();
+	static inline void handleCompMatch();
 
 	using Print::write;
 
 
-private:	
+private:
 	volatile uint8_t rxBuffer[REDEYE_RX_BUFFER_SIZE];
 	uint8_t rxReadIndex = 0;
 	volatile uint8_t rxWriteIndex = 0;
-	bool _rxInverseLogic;
-	int _rxInterrupt;
+	bool _rxInverseLogic = true;
+	int _rxInterrupt = NOT_AN_INTERRUPT;
 
 	volatile uint8_t rxBurstTimer = 0;
 	volatile bool rxBurstRecieved = false;
@@ -57,22 +53,24 @@ private:
 	volatile uint8_t txBurstWaitCounter = 0;
 	volatile uint8_t txBitWaitCounter = 0;
 	volatile bool txWaitingBeforeBurst = false;
-	bool _txInverseLogic;
+	bool _txInverseLogic = true;
 	volatile uint16_t txByte = 0;
 	volatile uint8_t txBytesInCurrentLine = 0;
 	byte txLastLineFeed = 10;
-	
+	uint8_t txPin = NOT_A_PIN;
+
 	bool slowMode = false;
 	bool transmitMode = false;
 	unsigned long lastLineTime = 0;
 	volatile uint8_t slowSendLinesAvailable = 4;
-	static RedEye *activeInstance;
+	static RedEyeClass *activeInstance;
 	void updateLineTimes();
 	void sendBurst();
 	void bitInterrupt();
 	bool calculateParity(unsigned);
 	void loadNextByte();
 	void pulseInterrupt();
+	void pulseOffInterrupt();
 	void rxInterrupt();
 	void rxEndOfBurst();
 	void rxHalfBitFinished();
@@ -80,3 +78,5 @@ private:
 	void rxByteFinished();
 	bool addToRxBuffer(byte);
 };
+
+extern RedEyeClass RedEye;

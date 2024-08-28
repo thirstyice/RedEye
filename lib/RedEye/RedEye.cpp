@@ -1,92 +1,89 @@
 #include <Arduino.h>
 #include "RedEye.h"
 
-RedEye* RedEye::activeInstance = 0;
+RedEyeClass RedEye;
 
-#if F_CPU != 16000000L
-	#error "Unsupported clock frequency"
-#endif
+RedEyeClass* RedEyeClass::activeInstance = 0;
 
-void RedEye::begin() {
+void RedEyeClass::begin(const uint8_t rxPin, const uint8_t _txPin, bool rxInverseLogic, bool txInverseLogic) {
+	end();
+	_rxInterrupt = digitalPinToInterrupt(rxPin);
+	txPin = _txPin;
+	_txInverseLogic = txInverseLogic;
+	_rxInverseLogic = rxInverseLogic;
 	if (_rxInterrupt != NOT_AN_INTERRUPT) {
-		attachInterrupt(_rxInterrupt, RedEye::handleInterrupt, RISING - _rxInverseLogic);
+		attachInterrupt(_rxInterrupt, RedEyeClass::handleInterrupt, RISING - _rxInverseLogic);
 	}
 
-#ifdef __AVR_ATtinyX41__
-	#ifdef REDEYE_USE_TIMER_2
-		#define REDEYE_TIMER_IS_16_BIT
-		#define REDEYE_COMP_REGISTER OCR2A
-		#define REDEYE_TX_PIN PIN_PB2
-		#define REDEYE_TX_VECTOR TIMER2_COMPB_vect
 
-			TCCR2A = 0b10100010 | (!_txInverseLogic << COM2A0) | (!_txInverseLogic << COM2B0);
-			TCCR2B = 0b00011001; // Fast PWM, Clk/1
-			TCCR2C = 0b00000000; // Has to be all 0 in PWM mode
-			TOCPMSA1 = 0b10000000; // Output OC2A to TOCC7 (PB2)
-			TOCPMSA0 = 0b00000000; // Don't output elsewhere
-			TOCPMCOE = 0b10000000; // Enable TOCC7 Output
-			ICR2 = 488; // 16MHz / 488 cycles ~= 32768Hz
-			OCR2A = 488; // 0% duty cycle
-			OCR2B = 1;
-			TIMSK2 = _BV(OCIE2B);
-	#else
-		#error "RedEye: Timer 1 not yet supported on this board!"
-	#endif
-#elif __AVR_ATmega32U4__
-	#ifdef REDEYE_USE_TIMER_2
-		// Timer2 is actually timer3 on ATmega32u4
-		#error "Second timer not yet supported on this board!"
-	#else
-		#define REDEYE_TIMER_IS_16_BIT
-		#define REDEYE_COMP_REGISTER OCR1C
-		#define REDEYE_TX_PIN 11
-		#define REDEYE_TX_VECTOR TIMER1_COMPB_vect
-		
-				TCCR1A = 0b00101010 | (!_txInverseLogic<<COM1C0) | (!_txInverseLogic << COM1B0);
-				TCCR1B = 0b00011001;
-				ICR1 = 488;
-				OCR1C = 488;
-				OCR1B = 1;
-				TIMSK1 = _BV(OCIE1B);
-	#endif
+#if REDEYE_USE_TIMER != 1
+	#error "Only timer 1 is currently supported!"
 #else
-	#error "RedEyeSender: Unsupported Board!"
+	#ifdef TCNT1H
+		#define REDEYE_TIMER_IS_16_BIT
+		#if F_CPU == 16000000L
+			#define REDEYE_TIMER_COMP 488 // 16MHz / 488 cycles ~= 32768Hz
+		#else
+			#warning "CPU Frequencies other than 16MHz are untested. Good luck!"
+			#define REDEYE_SCALE_FACTOR F_CPU/32768U
+		#endif
+	#else
+		#define REDEYE_TIMER_COMP 61
+		#error "Only 16 bit timers currently supported!"
+	#endif
+	#define REDEYE_COMP_REGISTER OCR1A
+	#define REDEYE_COMP_BIT OCIE1A
+	#define REDEYE_COMP_VECTOR TIMER1_COMPA_vect
+	#define REDEYE_RESET_REGISTER OCR1B
+	#define REDEYE_RESET_BIT OCIE1B
+	#define REDEYE_TX_VECTOR TIMER1_COMPB_vect
+
+
+			TCCR1A = 0b00000010; // Fast PWM, TOP is ICRn
+			TCCR1B = 0b00011001; // Fast PWM, Clk/1
+	#ifdef TCCR1C
+			TCCR1C = 0b00000000; // Just in case
+	#endif
+			ICR1 = REDEYE_TIMER_COMP;
+			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP; // 0% duty cycle
+			REDEYE_RESET_REGISTER = 1;
+			TIMSK1 = _BV(REDEYE_RESET_BIT) | _BV(REDEYE_COMP_BIT);
 #endif
 
-	pinMode(REDEYE_TX_PIN, OUTPUT);
+	pinMode(txPin, OUTPUT);
 	activeInstance = this;
 }
 
-
-#ifdef REDEYE_TIMER_IS_16_BIT
-	#define REDEYE_TIMER_COMP 488
-#else
-	#define REDEYE_TIMER_COMP 61
-#endif
-
 ISR(REDEYE_TX_VECTOR) {
-	RedEye::handleTimer();
+	RedEyeClass::handleTimer();
+}
+ISR(REDEYE_COMP_VECTOR) {
+	RedEyeClass::handleCompMatch();
 }
 
-RedEye::RedEye(const uint8_t rxInterrupt, bool txInverseLogic, bool rxInverseLogic) {
-	_rxInterrupt = rxInterrupt;
-	_txInverseLogic = txInverseLogic;
-	_rxInverseLogic = rxInverseLogic;
-}
-
-void RedEye::handleInterrupt() {
+void RedEyeClass::handleInterrupt() {
 	if (activeInstance) {
 		activeInstance->rxInterrupt();
 	}
 }
 
- inline void RedEye::handleTimer() {
+ inline void RedEyeClass::handleTimer() {
 	if (activeInstance) {
 		activeInstance->pulseInterrupt();
 	}
 }
 
-void RedEye::updateLineTimes() {
+inline void RedEyeClass::handleCompMatch() {
+	if (activeInstance) {
+		activeInstance->pulseOffInterrupt();
+	}
+}
+
+void RedEyeClass::pulseOffInterrupt() {
+	digitalWrite(txPin, !_txInverseLogic);
+}
+
+void RedEyeClass::updateLineTimes() {
 	if (slowMode == true) {
 		while ((millis() - lastLineTime) > 2000) {
 			lastLineTime += 2000;
@@ -100,23 +97,29 @@ void RedEye::updateLineTimes() {
 	}
 }
 
-void RedEye::end() {
-	pinMode(REDEYE_TX_PIN, INPUT);
+void RedEyeClass::end() {
+	if (_rxInterrupt != NOT_AN_INTERRUPT) {
+		detachInterrupt(_rxInterrupt);
+	}
+	if (txPin != NOT_A_PIN) {
+		pinMode(txPin, INPUT);
+		digitalWrite(txPin, _txInverseLogic);
+	}
 	activeInstance = NULL;
 }
 
-void RedEye::setSlowMode(bool newMode) {
+void RedEyeClass::setSlowMode(bool newMode) {
 	slowMode = newMode;
 }
 
-void RedEye::setTransmitMode(bool newMode) {
+void RedEyeClass::setTransmitMode(bool newMode) {
 	if (newMode == false && transmitMode != false) {
 		flush();
 	}
 	transmitMode = newMode;
 }
 
-bool RedEye::addToRxBuffer(byte character) {
+bool RedEyeClass::addToRxBuffer(byte character) {
 	if (((rxWriteIndex +1) % REDEYE_RX_BUFFER_SIZE) == rxReadIndex) {
 		rxBuffer[rxWriteIndex] = 134; // Buffer overflow character
 		return false;
@@ -127,7 +130,7 @@ bool RedEye::addToRxBuffer(byte character) {
 	return true;
 }
 
-void RedEye::rxInterrupt() {
+void RedEyeClass::rxInterrupt() {
 	if (transmitMode == true) {
 		return;
 	}
@@ -140,7 +143,7 @@ void RedEye::rxInterrupt() {
 	rxPulses ++;
 }
 
-void RedEye::rxByteFinished() {
+void RedEyeClass::rxByteFinished() {
 	if ((calculateParity(rxByte & 0b10001011)!=((rxByte>>8)&1)) ||
 	    (calculateParity(rxByte & 0b11010101)!=((rxByte>>9)&1)) ||
 	    (calculateParity(rxByte & 0b11100110)!=((rxByte>>10)&1)) ||
@@ -154,7 +157,7 @@ void RedEye::rxByteFinished() {
 	rxByte = 0;
 }
 
-void RedEye::rxBitFinished() {
+void RedEyeClass::rxBitFinished() {
 	uint8_t bit = rxBit & 0b11;
 	rxByte = (rxByte<<1) & 0xfff;
 	if (bit == 0b10) {
@@ -169,7 +172,7 @@ void RedEye::rxBitFinished() {
 	}
 }
 
-void RedEye::rxHalfBitFinished() {
+void RedEyeClass::rxHalfBitFinished() {
 	rxBit=(rxBit<<1) & 0b111; // We only care about the 3 most recent half-bits
 	if (rxBurstRecieved == true) {
 		rxBit |= 1;
@@ -187,7 +190,7 @@ void RedEye::rxHalfBitFinished() {
 		rxBitTimer = 0;
 		rxHalfBitTimer = 0;
 	}
-	
+
 	if (rxBitTimer>0) {
 		rxBitTimer --;
 		if (rxBitTimer == 0) {
@@ -197,7 +200,7 @@ void RedEye::rxHalfBitFinished() {
 	}
 }
 
-void RedEye::rxEndOfBurst() {
+void RedEyeClass::rxEndOfBurst() {
 	if (rxPulses>=5 && rxPulses<=9) {
 		// It's a real burst!
 		rxBurstRecieved = true;
@@ -209,11 +212,11 @@ void RedEye::rxEndOfBurst() {
 	rxPulses = 0;
 }
 
-void RedEye::sendBurst() {
+void RedEyeClass::sendBurst() {
 	txPulses = 7;
 }
 
-void RedEye::bitInterrupt() {
+void RedEyeClass::bitInterrupt() {
 	txBitWaitCounter=27;
 	if (txBitCounter == 0) { // No data left in this byte
 		loadNextByte();
@@ -236,11 +239,10 @@ void RedEye::bitInterrupt() {
 	}
 }
 
-void RedEye::pulseInterrupt() {
-
+void RedEyeClass::pulseInterrupt() {
 	if (transmitMode == true) {
 		if (txPulses == 0) {
-			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP;
+			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP + 1;
 			// Duty cycle = 0%
 		} else {
 			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP / 2;
@@ -275,9 +277,10 @@ void RedEye::pulseInterrupt() {
 			}
 		}
 	}
+	digitalWrite(txPin, _txInverseLogic);
 }
 
-bool RedEye::calculateParity(unsigned x) {
+bool RedEyeClass::calculateParity(unsigned x) {
 	bool parity = 0;
 	while (x>0) {
 		x &= x-1;
@@ -286,12 +289,12 @@ bool RedEye::calculateParity(unsigned x) {
 	return parity;
 }
 
-void RedEye::loadNextByte() {
+void RedEyeClass::loadNextByte() {
 	if (slowSendLinesAvailable == 0) {
 		return;
 	}
 
-	
+
 	if (txWriteIndex != txReadIndex) {
 		txByte = txBuffer[txReadIndex];
 		byte character = txByte;
@@ -306,7 +309,7 @@ void RedEye::loadNextByte() {
 	return;
 }
 
-size_t RedEye::write(uint8_t toSend) {
+size_t RedEyeClass::write(uint8_t toSend) {
 	updateLineTimes();
 	if (toSend == 0) {
 		return 1; // Yep, we definitely sent that nothing!
@@ -332,16 +335,16 @@ size_t RedEye::write(uint8_t toSend) {
 	return 1;
 }
 
-void RedEye::flush() {
+void RedEyeClass::flush() {
 	while (txWriteIndex != txReadIndex);
 }
 
-int RedEye::available() {
+int RedEyeClass::available() {
 	uint8_t available = rxWriteIndex - rxReadIndex;
 	return available;
 }
 
-int RedEye::read() {
+int RedEyeClass::read() {
 	if (rxReadIndex == rxWriteIndex) {
 		return 0;
 	}
@@ -352,10 +355,9 @@ int RedEye::read() {
 	return toRead;
 }
 
-int RedEye::peek() {
+int RedEyeClass::peek() {
 	if (rxReadIndex == rxWriteIndex) {
 		return 0;
 	}
 	return rxBuffer[rxReadIndex];
 }
-

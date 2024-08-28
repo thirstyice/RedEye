@@ -1,13 +1,15 @@
 #include <Arduino.h>
 #include <RedEye.h>
 
-RedEye redEye(INT1); // Defaults to INT0 unless our build flags say otherwise
+char toPrint = 'A';
 
 void setup() {
-	pinMode(10, OUTPUT);
+	pinMode(11, OUTPUT);
+	pinMode(2, INPUT_PULLUP);
 	Serial.begin(2400);
-	redEye.begin();
-	delay(2000);
+	RedEye.begin(2,11, false, false);
+	RedEye.setTransmitMode(true);
+	while (!Serial);
 	Serial.println("Ready!");
 }
 
@@ -15,10 +17,15 @@ void setup() {
 
 
 void loop() {
-	digitalWrite(10, LOW);
-	while (redEye.available()) {
-		Serial.write(redEye.read());
+	while (RedEye.available()) {
+		Serial.print(RedEye.read());
 	}
-	redEye.print("A");
-	delay(1000);
+
+	RedEye.print(toPrint);
+	toPrint ++;
+	if (toPrint > 'z') {
+		toPrint = 'A';
+	}
+	delay(500);
+	RedEye.flush();
 }
