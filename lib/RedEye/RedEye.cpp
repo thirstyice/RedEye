@@ -22,42 +22,40 @@ void RedEyeClass::begin(const uint8_t rxPin, const uint8_t _txPin, bool rxInvers
 	#ifdef TCNT1H
 		#define REDEYE_TIMER_IS_16_BIT
 		#if F_CPU == 16000000L
-			#define REDEYE_TIMER_COMP 488 // 16MHz / 488 cycles ~= 32768Hz
+			#define REDEYE_PULSE_LEN 488 // 16MHz / 488 cycles ~= 32768Hz
 		#else
 			#warning "CPU Frequencies other than 16MHz are untested. Good luck!"
 			#define REDEYE_SCALE_FACTOR F_CPU/32768U
 		#endif
 	#else
-		#define REDEYE_TIMER_COMP 61
+		#define REDEYE_PULSE_LENGTH 61
 		#error "Only 16 bit timers currently supported!"
 	#endif
-	#define REDEYE_COMP_REGISTER OCR1A
-	#define REDEYE_COMP_BIT OCIE1A
-	#define REDEYE_COMP_VECTOR TIMER1_COMPA_vect
-	#define REDEYE_RESET_REGISTER OCR1B
-	#define REDEYE_RESET_BIT OCIE1B
-	#define REDEYE_TX_VECTOR TIMER1_COMPB_vect
-
-
+	#define REDEYE_PWM_REG OCR1A
+	#define REDEYE_PWM_EN_BIT OCIE1A
+	#define REDEYE_PWM_VECT TIMER1_COMPA_vect
+	#define REDEYE_PULSE_REG OCR1B
+	#define REDEYE_PULSE_EN_BIT OCIE1B
+	#define REDEYE_PULSE_VECT TIMER1_COMPB_vect
 			TCCR1A = 0b00000010; // Fast PWM, TOP is ICRn
 			TCCR1B = 0b00011001; // Fast PWM, Clk/1
 	#ifdef TCCR1C
 			TCCR1C = 0b00000000; // Just in case
 	#endif
-			ICR1 = REDEYE_TIMER_COMP;
-			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP; // 0% duty cycle
-			REDEYE_RESET_REGISTER = 1;
-			TIMSK1 = _BV(REDEYE_RESET_BIT) | _BV(REDEYE_COMP_BIT);
+			ICR1 = REDEYE_PULSE_LEN;
+			REDEYE_PWM_REG = REDEYE_PULSE_LEN + 1; // Never reached, so 0% duty cycle
+			REDEYE_PULSE_REG = 1;
+			TIMSK1 = _BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT);
 #endif
 
 	pinMode(txPin, OUTPUT);
 	activeInstance = this;
 }
 
-ISR(REDEYE_TX_VECTOR) {
+ISR(REDEYE_PULSE_VECT) {
 	RedEyeClass::handleTimer();
 }
-ISR(REDEYE_COMP_VECTOR) {
+ISR(REDEYE_PWM_VECT) {
 	RedEyeClass::handleCompMatch();
 }
 
@@ -242,10 +240,10 @@ void RedEyeClass::bitInterrupt() {
 void RedEyeClass::pulseInterrupt() {
 	if (transmitMode == true) {
 		if (txPulses == 0) {
-			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP + 1;
+			REDEYE_PWM_REG = REDEYE_PULSE_LEN + 1;
 			// Duty cycle = 0%
 		} else {
-			REDEYE_COMP_REGISTER = REDEYE_TIMER_COMP / 2;
+			REDEYE_PWM_REG = REDEYE_PULSE_LEN / 2;
 			// Duty cycle = 50%
 			txPulses--;
 		}
