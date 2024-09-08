@@ -83,7 +83,7 @@ void rxHalfBitFinished() {
 	}
 	if (rxBit == 0b111) {
 		// This is a start bit
-		rxBit = 0;
+		rxBit = rxBit<<1;
 		rxByte = 0;
 		rxByteBits = 0;
 		rxBitTimer = 2;
