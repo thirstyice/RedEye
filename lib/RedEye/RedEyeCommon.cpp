@@ -33,10 +33,10 @@ bool txSlowMode = false;
 Mode mode = Mode::ModeDisabled;
 
 ISR(REDEYE_PULSE_VECT) {
-	if (mode&Mode::ModeTx != 0) {
+	if ((mode&Mode::ModeTx) != 0) {
 		txPulse();
 	}
-	if (mode&Mode::ModeRx != 0) {
+	if ((mode&Mode::ModeRx) != 0) {
 		rxPulse();
 	}
 	if (mode != 0) {
@@ -90,7 +90,7 @@ void RedEyeClass::setMode(Mode newMode) {
 			attachInterrupt(rxInterrupt, rxInterruptHandler, RISING - rxInverseLogic);
 		}
 	}
-	if (newMode&ModeTx == 0 && mode&ModeTx != 0) {
+	if (((newMode&ModeTx) == 0) && ((mode&ModeTx) != 0)) {
 		flush(); // Finish what we're currently transmitting before switching to RX
 	}
 	if (newMode==0 && mode!=0) {
