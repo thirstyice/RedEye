@@ -6,9 +6,9 @@ char toPrint = 'A';
 void setup() {
 	pinMode(11, OUTPUT);
 	pinMode(2, INPUT_PULLUP);
-	Serial.begin(2400);
+	Serial.begin(115200);
 	RedEye.begin(2,11, false, false);
-	RedEye.setTransmitMode(true);
+	RedEye.setMode(redeye::ModeDuplex);
 	while (!Serial);
 	Serial.println("Ready!");
 }
@@ -18,7 +18,7 @@ void setup() {
 
 void loop() {
 	while (RedEye.available()) {
-		Serial.print(RedEye.read());
+		Serial.write(RedEye.read());
 	}
 
 	RedEye.print(toPrint);

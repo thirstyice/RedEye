@@ -15,8 +15,6 @@ redeye::RedEyeClass RedEye;
 
 namespace redeye {
 
-bool redeyeActive = false;
-
 volatile uint8_t rxBuffer[REDEYE_TX_BUFFER_SIZE];
 uint8_t rxReadIndex = 0;
 volatile uint8_t rxWriteIndex = 0;
@@ -32,15 +30,16 @@ bool txInverseLogic = true;
 volatile uint8_t txBytesInCurrentLine = 0;
 byte txLastLineFeed = 10;
 bool txSlowMode = false;
-bool transmitMode = false;
+Mode mode = Mode::ModeDisabled;
 
 ISR(REDEYE_PULSE_VECT) {
-	if (transmitMode == true) {
+	if (mode&Mode::ModeTx != 0) {
 		txPulse();
-	} else {
+	}
+	if (mode&Mode::ModeRx != 0) {
 		rxPulse();
 	}
-	if (redeyeActive) {
+	if (mode != 0) {
 		digitalWrite(txPin, txInverseLogic);
 	}
 }
@@ -62,14 +61,12 @@ bool calculateParity(unsigned x) {
 }
 
 void RedEyeClass::begin(const uint8_t _rxPin, const uint8_t _txPin, bool _rxInverseLogic, bool _txInverseLogic) {
-	end();
+	setMode(Mode::ModeDisabled);
 	rxInterrupt = digitalPinToInterrupt(_rxPin);
 	txPin = _txPin;
 	txInverseLogic = _txInverseLogic;
 	rxInverseLogic = _rxInverseLogic;
-	if (rxInterrupt != NOT_AN_INTERRUPT) {
-		attachInterrupt(rxInterrupt, rxInterruptHandler, RISING - rxInverseLogic);
-	}
+
 	REDEYE_TCCRA = 0b00000010; // Fast PWM, TOP is ICRn
 	REDEYE_TCCRB = 0b00011001; // Fast PWM, Clk/1
 #ifdef REDEYE_TCCRC
@@ -78,32 +75,34 @@ void RedEyeClass::begin(const uint8_t _rxPin, const uint8_t _txPin, bool _rxInve
 	REDEYE_ICR = REDEYE_PULSE_LEN;
 	REDEYE_PWM_REG = REDEYE_PULSE_LEN + 1; // Never reached, so 0% duty cycle
 	REDEYE_PULSE_REG = 1;
-	REDEYE_TIMSK = _BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT);
 
 	pinMode(txPin, OUTPUT);
-	redeyeActive = true;
 }
 
-void RedEyeClass::end() {
-	if (rxInterrupt != NOT_AN_INTERRUPT) {
-		detachInterrupt(rxInterrupt);
-	}
-	REDEYE_TIMSK = 0;
-	if (txPin != NOT_A_PIN) {
-		digitalWrite(txPin, txInverseLogic);
-	}
-	redeyeActive = false;
-}
-
-void RedEyeClass::setSlowMode(bool newMode) {
+void RedEyeClass::setSlowTx(bool newMode) {
 	txSlowMode = newMode;
 }
 
-void RedEyeClass::setTransmitMode(bool newMode) {
-	if (newMode == false && transmitMode != false) {
+void RedEyeClass::setMode(Mode newMode) {
+	if (mode==0 && newMode!=0) {
+		REDEYE_TIMSK = _BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT);
+		if (rxInterrupt != NOT_AN_INTERRUPT) {
+			attachInterrupt(rxInterrupt, rxInterruptHandler, RISING - rxInverseLogic);
+		}
+	}
+	if (newMode&ModeTx == 0 && mode&ModeTx != 0) {
 		flush(); // Finish what we're currently transmitting before switching to RX
 	}
-	transmitMode = newMode;
+	if (newMode==0 && mode!=0) {
+		if (rxInterrupt != NOT_AN_INTERRUPT) {
+			detachInterrupt(rxInterrupt);
+		}
+		REDEYE_TIMSK = 0;
+		if (txPin != NOT_A_PIN) {
+			digitalWrite(txPin, txInverseLogic);
+		}
+	}
+	mode = newMode;
 }
 
 size_t RedEyeClass::write(uint8_t toSend) {

@@ -34,7 +34,7 @@ bool addToRxBuffer(byte character) {
 }
 
 void rxInterruptHandler() {
-	if (transmitMode == true) {
+	if (mode&Mode::ModeRx == 0) {
 		return;
 	}
 	if (rxPulses == 0) {

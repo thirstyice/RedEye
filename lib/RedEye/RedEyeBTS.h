@@ -56,7 +56,7 @@ extern volatile uint8_t txReadIndex;
 extern uint8_t txWriteIndex;
 extern bool txSlowMode;
 
-extern bool transmitMode;
+extern Mode mode;
 
 bool calculateParity(unsigned);
 
