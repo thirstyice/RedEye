@@ -1,16 +1,21 @@
 /*******************************************************************************
-* Project: HP Printer Tester                                                   *
-* Filename: /lib/RedEye/RedEyeVars.h                                           *
+* Project: RedEye                                                              *
+* Filename: /src/RedEyeBTS.h                                                   *
 *                                                                              *
-* Created: 2024-08-30                                                          *
+* Created: 2024-08-31                                                          *
 * Author: thirstyice                                                           *
 *                                                                              *
 * Copyright (c) 2024 Tauran - https://github.com/thirstyice                    *
-* For details see HP Printer Tester/LICENSE (if applicable)                    *
+* For details see RedEye/LICENSE (if applicable)                               *
 *                                                                              *
 *******************************************************************************/
+
 #pragma once
 #include "RedEye.h"
+
+#ifndef REDEYE_USE_TIMER
+	#define REDEYE_USE_TIMER 1
+#endif
 
 #if REDEYE_USE_TIMER != 1
 	#error "Only timer 1 is currently supported!"

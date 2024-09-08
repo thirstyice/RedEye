@@ -1,21 +1,21 @@
 /*******************************************************************************
-* Project: HP Printer Tester                                                   *
-* Filename: /lib/RedEye/RedEye.h                                               *
+* Project: RedEye                                                              *
+* Filename: /src/RedEye.h                                                      *
 *                                                                              *
-* Created: 2024-08-27                                                          *
+* Created: 2024-09-08                                                          *
 * Author: thirstyice                                                           *
 *                                                                              *
 * Copyright (c) 2024 Tauran - https://github.com/thirstyice                    *
-* For details see HP Printer Tester/LICENSE (if applicable)                    *
+* For details see RedEye/LICENSE (if applicable)                               *
 *                                                                              *
 *******************************************************************************/
+
 #pragma once
 
 #include <Arduino.h>
 
 #define REDEYE_RX_BUFFER_SIZE 16
 #define REDEYE_TX_BUFFER_SIZE 16
-#define REDEYE_USE_TIMER 1
 namespace redeye {
 enum Mode : uint8_t {
 	ModeDisabled = 0,

@@ -1,0 +1,28 @@
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+RedEyeClass KEYWORD1
+redeye KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin KEYWORD2
+setSlowTx KEYWORD2
+setMode KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+RedEye KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+ModeDisabled
+ModeTx
+ModeRx
+ModeDuplex

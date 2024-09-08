@@ -1,14 +1,15 @@
 /*******************************************************************************
-* Project: HP Printer Tester                                                   *
-* Filename: /lib/RedEye/RedEyeCommon.cpp                                          *
+* Project: RedEye                                                              *
+* Filename: /src/RedEyeCommon.cpp                                              *
 *                                                                              *
-* Created: 2024-08-30                                                          *
+* Created: 2024-09-08                                                          *
 * Author: thirstyice                                                           *
 *                                                                              *
 * Copyright (c) 2024 Tauran - https://github.com/thirstyice                    *
-* For details see HP Printer Tester/LICENSE (if applicable)                    *
+* For details see RedEye/LICENSE (if applicable)                               *
 *                                                                              *
 *******************************************************************************/
+
 #include "RedEyeBTS.h"
 
 redeye::RedEyeClass RedEye;

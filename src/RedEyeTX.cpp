@@ -1,14 +1,15 @@
 /*******************************************************************************
-* Project: HP Printer Tester                                                   *
-* Filename: /lib/RedEye/RedEyeTX.cpp                                           *
+* Project: RedEye                                                              *
+* Filename: /src/RedEyeTX.cpp                                                  *
 *                                                                              *
-* Created: 2024-08-30                                                          *
+* Created: 2024-08-31                                                          *
 * Author: thirstyice                                                           *
 *                                                                              *
 * Copyright (c) 2024 Tauran - https://github.com/thirstyice                    *
-* For details see HP Printer Tester/LICENSE (if applicable)                    *
+* For details see RedEye/LICENSE (if applicable)                               *
 *                                                                              *
 *******************************************************************************/
+
 #include "RedEyeBTS.h"
 
 namespace redeye {
