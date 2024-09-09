@@ -18,34 +18,40 @@
 #endif
 
 #if REDEYE_USE_TIMER != 1
-	#error "Only timer 1 is currently supported!"
-#else
-	#ifdef TCNT1H
-		#define REDEYE_TIMER_IS_16_BIT
-		#if F_CPU == 16000000L
-			#define REDEYE_PULSE_LEN 488 // 16MHz / 488 cycles ~= 32768Hz
-		#else
-			#warning "CPU Frequencies other than 16MHz are untested. Good luck!"
-			#define REDEYE_SCALE_FACTOR F_CPU/32768U
-		#endif
-	#else
-		#define REDEYE_PULSE_LEN 61
-		#error "Only 16 bit timers currently supported!"
-	#endif
-	#define REDEYE_PWM_REG OCR1A
-	#define REDEYE_PWM_EN_BIT OCIE1A
-	#define REDEYE_PWM_VECT TIMER1_COMPA_vect
-	#define REDEYE_PULSE_REG OCR1B
-	#define REDEYE_PULSE_EN_BIT OCIE1B
-	#define REDEYE_PULSE_VECT TIMER1_COMPB_vect
-	#define REDEYE_TCCRA TCCR1A
-	#define REDEYE_TCCRB TCCR1B
-	#ifdef TCCR1C
-		#define REDEYE_TCCRC TCCR1C
-	#endif
-	#define REDEYE_ICR ICR1
-	#define REDEYE_TIMSK TIMSK1
+	#warning "RedEye has only been tested w/ Timer 1! Here there be dragons!"
 #endif
+
+#define __REDEYE_ID(x, y, z) x ## y ## z
+#define _REDEYE_ID(x, y, z) __REDEYE_ID(x, y, z)
+#define REDEYE_ID(x, y) _REDEYE_ID(x, REDEYE_USE_TIMER, y)
+
+#define REDEYE_16BIT REDEYE_ID(TCNT,H)
+
+
+#if defined(REDEYE_16BIT)
+	#define REDEYE_TIMER_MAX UINT16_MAX
+#else
+	#define REDEYE_TIMER_MAX UINT8_MAX
+#endif
+#define REDEYE_PULSE_LEN F_CPU/32768U
+#if REDEYE_PULSE_LEN >= REDEYE_TIMER_MAX
+	#error "Unsupported timer / clock speed combination!"
+#endif
+
+
+#define REDEYE_PWM_REG REDEYE_ID(OCR,A)
+#define REDEYE_PWM_EN_BIT REDEYE_ID(OCIE,A)
+#define REDEYE_PWM_VECT REDEYE_ID(TIMER,_COMPA_vect)
+#define REDEYE_PULSE_REG REDEYE_ID(OCR,B)
+#define REDEYE_PULSE_EN_BIT REDEYE_ID(OCIE,B)
+#define REDEYE_PULSE_VECT REDEYE_ID(TIMER,_COMPB_vect)
+#define REDEYE_TCCRA REDEYE_ID(TCCR,A)
+#define REDEYE_TCCRB REDEYE_ID(TCCR,B)
+#ifdef REDEYE_ID(TCCR,C)
+	#define REDEYE_TCCRC REDEYE_ID(TCCR,C)
+#endif
+#define REDEYE_ICR REDEYE_ID(ICR, )
+#define REDEYE_TIMSK REDEYE_ID(TIMSK, )
 
 
 
