@@ -14,12 +14,12 @@
 
 namespace redeye {
 
-volatile uint8_t txPulses = 0;
-volatile uint8_t txBitCounter = 0;
-volatile uint8_t txBurstWaitCounter = 0;
-volatile uint8_t txBitWaitCounter = 0;
+volatile uint8_t txPulsesToSend = 0;
+volatile uint8_t txBitsToSend = 0;
+volatile uint8_t txSendNextBurstAfter = 0;
+volatile uint8_t txSendNextBitAfter = 0;
 volatile bool txWaitingBeforeBurst = false;
-volatile uint16_t txByte = 0;
+volatile uint16_t txByteToSend = 0;
 unsigned long lastLineTime = 0;
 volatile uint8_t slowSendLinesAvailable = 4;
 
@@ -38,71 +38,67 @@ void txUpdateLineTimes() {
 }
 
 void txSendBurst() {
-	txPulses = 7;
+	txPulsesToSend = 7;
 }
 
 void txBitInterrupt() {
-	txBitWaitCounter=27;
-	if (txBitCounter == 0) { // No data left in this byte
-		txLoadNextByte();
+	if (txBitsToSend == 0) { // No data left in this byte
+		txLoadNextByte(); // Try to load a new byte
 		return;
 	}
-	txBitCounter--;
-	if (txBitCounter > 11) { // Send a start half-bit, and come back for the next one
-		txBitWaitCounter=13;
+	txBitsToSend--;
+	if (txBitsToSend > 11) { // Send a start half-bit, and come back for the next one
+		txSendNextBitAfter=13;
+		txSendBurst();
+		return;
+	}
+	txSendNextBitAfter=27;
+	if (((txByteToSend>>txBitsToSend)&1) == 1) {
 		txSendBurst();
 	} else {
-		if (((txByte>>txBitCounter)&1) == 1) {
-			txSendBurst();
-		} else {
-			txWaitingBeforeBurst = true;
-			txBurstWaitCounter=13;
-		}
+		txSendNextBurstAfter=13;
 	}
-	if (txBitCounter == 0) {
-		txBitWaitCounter=41; // Enforce post-frame delay
+	if (txBitsToSend == 0) {
+		txSendNextBitAfter=41; // Enforce post-frame delay
+		txByteToSend = 0;
 	}
 }
 
 void txPulse() {
-	if (txPulses == 0) {
+	if (txPulsesToSend == 0) {
 		REDEYE_PWM_REG = REDEYE_PULSE_LEN + 1;
 		// Duty cycle = 0%
 	} else {
 		REDEYE_PWM_REG = REDEYE_PULSE_LEN / 2;
 		// Duty cycle = 50%
-		txPulses--;
+		txPulsesToSend--;
 	}
-	if (txBitWaitCounter == 0) {
+	if (txSendNextBitAfter == 0) {
 		txBitInterrupt();
 	} else {
-		txBitWaitCounter--;
+		txSendNextBitAfter--;
 	}
-	if (txWaitingBeforeBurst == true) {
-		if (txBurstWaitCounter == 0) {
-			txWaitingBeforeBurst=false;
+	if (txSendNextBurstAfter>0) {
+		txSendNextBurstAfter--;
+		if (txSendNextBurstAfter==0) {
 			txSendBurst();
-		} else {
-			txBurstWaitCounter --;
 		}
 	}
 }
 
 void txLoadNextByte() {
-	if (slowSendLinesAvailable == 0) {
+	if (slowSendLinesAvailable == 0 || txByteToSend!=0) {
 		return;
 	}
-	if (txWriteIndex != txReadIndex) {
-		txByte = txBuffer[txReadIndex];
-		byte character = txByte;
-		if ((character == 4)|| (character == 10)) {
-			slowSendLinesAvailable --;
-		}
-		txBuffer[txReadIndex] = 0;
-		txReadIndex ++;
-		txReadIndex %= REDEYE_TX_BUFFER_SIZE;
-		txBitCounter = 15;
+	txByteToSend = txBuffer[txReadIndex];
+	byte character = txByteToSend;
+	if ((character == 4) || (character == 10)) { // Newlines
+		slowSendLinesAvailable --;
 	}
+	txBuffer[txReadIndex] = 0;
+	txReadIndex ++;
+	txReadIndex %= REDEYE_TX_BUFFER_SIZE;
+	txBitsToSend = 15;
 	return;
 }
 
