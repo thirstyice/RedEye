@@ -31,13 +31,13 @@ bool txInverseLogic = true;
 volatile uint8_t txBytesInCurrentLine = 0;
 byte txLastLineFeed = 10;
 bool txSlowMode = false;
-Mode mode = Mode::ModeDisabled;
+RedEyeClass::Mode mode = RedEyeClass::ModeDisabled;
 
 ISR(REDEYE_PULSE_VECT) {
-	if ((mode&Mode::ModeTx) != 0) {
+	if ((mode&RedEyeClass::ModeTx) != 0) {
 		txPulse();
 	}
-	if ((mode&Mode::ModeRx) != 0) {
+	if ((mode&RedEyeClass::ModeRx) != 0) {
 		rxPulse();
 	}
 	if (mode != 0) {
@@ -62,7 +62,7 @@ bool calculateParity(unsigned x) {
 }
 
 void RedEyeClass::begin(const uint8_t _rxPin, const uint8_t _txPin, bool _rxInverseLogic, bool _txInverseLogic) {
-	setMode(Mode::ModeDisabled);
+	setMode(RedEyeClass::ModeDisabled);
 	rxInterrupt = digitalPinToInterrupt(_rxPin);
 	txPin = _txPin;
 	txInverseLogic = _txInverseLogic;
