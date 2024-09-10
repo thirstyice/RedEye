@@ -34,14 +34,14 @@ bool txSlowMode = false;
 RedEyeClass::Mode mode = RedEyeClass::ModeDisabled;
 
 ISR(REDEYE_PULSE_VECT) {
+	if (mode != 0) {
+		digitalWrite(txPin, txInverseLogic);
+	}
 	if ((mode&RedEyeClass::ModeTx) != 0) {
 		txPulse();
 	}
 	if ((mode&RedEyeClass::ModeRx) != 0) {
 		rxPulse();
-	}
-	if (mode != 0) {
-		digitalWrite(txPin, txInverseLogic);
 	}
 }
 
@@ -75,7 +75,7 @@ void RedEyeClass::begin(const uint8_t _rxPin, const uint8_t _txPin, bool _rxInve
 #endif
 	REDEYE_ICR = REDEYE_PULSE_LEN;
 	REDEYE_PWM_REG = REDEYE_PULSE_LEN + 1; // Never reached, so 0% duty cycle
-	REDEYE_PULSE_REG = 1;
+	REDEYE_PULSE_REG = 0;
 
 	pinMode(txPin, OUTPUT);
 }
