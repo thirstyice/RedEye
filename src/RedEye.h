@@ -82,7 +82,11 @@ extern redeye::RedEyeClass RedEye;
 #define REDEYE_TCCRB REDEYE_ID(TCCR,B)
 #define REDEYE_TCCRC REDEYE_ID(TCCR,C)
 #define REDEYE_ICR REDEYE_ID(ICR, )
-#define REDEYE_TIMSK REDEYE_ID(TIMSK, )
+#ifdef TIMSK
+	#define REDEYE_TIMSK TIMSK
+#else
+	#define REDEYE_TIMSK REDEYE_ID(TIMSK, )
+#endif
 
 #if !(\
 	defined(REDEYE_PWM_REG) &&\

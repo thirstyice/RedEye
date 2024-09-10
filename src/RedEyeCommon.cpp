@@ -86,7 +86,7 @@ void RedEyeClass::setSlowTx(bool newMode) {
 
 void RedEyeClass::setMode(Mode newMode) {
 	if (mode==0 && newMode!=0) {
-		REDEYE_TIMSK = _BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT);
+		REDEYE_TIMSK = REDEYE_TIMSK | _BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT);
 		if (rxInterrupt != NOT_AN_INTERRUPT) {
 			attachInterrupt(rxInterrupt, rxInterruptHandler, RISING - rxInverseLogic);
 		}
