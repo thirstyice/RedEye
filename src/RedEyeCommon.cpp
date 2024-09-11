@@ -98,7 +98,7 @@ void RedEyeClass::setMode(Mode newMode) {
 		if (rxInterrupt != NOT_AN_INTERRUPT) {
 			detachInterrupt(rxInterrupt);
 		}
-		REDEYE_TIMSK = 0;
+		REDEYE_TIMSK = REDEYE_TIMSK & ~(_BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT));
 		if (txPin != NOT_A_PIN) {
 			digitalWrite(txPin, txInverseLogic);
 		}
