@@ -56,6 +56,10 @@ extern redeye::RedEyeClass RedEye;
 	#warning "Using RedEye on timer 0 may interfere w/ Arduino timing functions!"
 #endif
 
+#if F_CPU < 16000000L
+	#warning "Clock speed below 16MHz; you may encounter problems!"
+#endif
+
 #define __REDEYE_ID(x, y, z) x ## y ## z
 #define _REDEYE_ID(x, y, z) __REDEYE_ID(x, y, z)
 #define REDEYE_ID(x, y) _REDEYE_ID(x, REDEYE_USE_TIMER, y)
