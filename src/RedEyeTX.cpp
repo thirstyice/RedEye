@@ -87,17 +87,20 @@ void txPulse() {
 }
 
 void txLoadNextByte() {
-	if (slowSendLinesAvailable == 0 || txByteToSend!=0) {
+	if (slowSendLinesAvailable == 0 || txByteToSend!=0 || txReadIndex==txWriteIndex) {
 		return;
 	}
 	txByteToSend = txBuffer[txReadIndex];
+	txBuffer[txReadIndex] = 0;
+	txReadIndex ++;
+	txReadIndex %= REDEYE_TX_BUFFER_SIZE;
+	if (txByteToSend==0) {
+		return;
+	}
 	byte character = txByteToSend;
 	if ((character == 4) || (character == 10)) { // Newlines
 		slowSendLinesAvailable --;
 	}
-	txBuffer[txReadIndex] = 0;
-	txReadIndex ++;
-	txReadIndex %= REDEYE_TX_BUFFER_SIZE;
 	txBitsToSend = 15;
 	return;
 }
