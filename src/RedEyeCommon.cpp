@@ -124,7 +124,9 @@ size_t RedEyeClass::write(uint8_t toSend) {
 	errorCorrection += calculateParity(toSend & 0b01111000)<<11;
 	errorCorrection += toSend;
 
-	while (((txWriteIndex+1) % REDEYE_TX_BUFFER_SIZE) == txReadIndex); // Wait so we don't overflow the buffer
+	while (((txWriteIndex+1) % REDEYE_TX_BUFFER_SIZE) == txReadIndex) {
+		delay(5); // Poke the watchdog
+	}; // Wait so we don't overflow the buffer
 	txBuffer[txWriteIndex] = errorCorrection;
 	txWriteIndex++;
 	txWriteIndex %= REDEYE_TX_BUFFER_SIZE;
