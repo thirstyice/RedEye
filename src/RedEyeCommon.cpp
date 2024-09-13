@@ -132,10 +132,6 @@ size_t RedEyeClass::write(uint8_t toSend) {
 	return 1;
 }
 
-void RedEyeClass::flush() {
-	while (txWriteIndex != txReadIndex);
-}
-
 int RedEyeClass::available() {
 	uint8_t available = rxWriteIndex - rxReadIndex;
 	return available;

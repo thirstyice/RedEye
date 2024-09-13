@@ -23,6 +23,14 @@ volatile uint16_t txByteToSend = 0;
 unsigned long lastLineTime = 0;
 volatile uint8_t slowSendLinesAvailable = 4;
 
+void RedEyeClass::flush() {
+	while (txWriteIndex != txReadIndex) {
+		delay(5); // Poke the watchdog
+	}
+	while (txBitsToSend>0);
+	delay(2); // Finish the last bit
+}
+
 void txUpdateLineTimes() {
 	if (txSlowMode == true) {
 		while ((millis() - lastLineTime) > 2000) {
