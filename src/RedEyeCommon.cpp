@@ -16,7 +16,7 @@ redeye::RedEyeClass RedEye;
 
 namespace redeye {
 
-volatile uint8_t rxBuffer[REDEYE_TX_BUFFER_SIZE];
+volatile uint8_t rxBuffer[REDEYE_RX_BUFFER_SIZE];
 uint8_t rxReadIndex = 0;
 volatile uint8_t rxWriteIndex = 0;
 bool rxInverseLogic = true;
