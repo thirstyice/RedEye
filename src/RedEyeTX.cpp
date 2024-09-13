@@ -59,7 +59,7 @@ void txBitInterrupt() {
 		txSendNextBurstAfter=13;
 	}
 	if (txBitsToSend == 0) {
-		txSendNextBitAfter=41; // Enforce post-frame delay
+		txSendNextBitAfter=70; // (28 for this bit + 42 for post-byte delay)
 		txByteToSend = 0;
 	}
 }
