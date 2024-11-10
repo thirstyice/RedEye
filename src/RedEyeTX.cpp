@@ -80,7 +80,7 @@ void txPulse() {
 }
 
 void txLoadNextByte() {
-	if (txByteToSend!=0 || txReadIndex==txWriteIndex || (txSlowMode && millis() < nextCharTime)) {
+	if (txByteToSend!=0 || txReadIndex==txWriteIndex || (txSlowMode && (millis() < nextCharTime))) {
 		return;
 	}
 	txByteToSend = txBuffer[txReadIndex];
