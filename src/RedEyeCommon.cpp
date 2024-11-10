@@ -28,7 +28,7 @@ volatile uint8_t txReadIndex = 0;
 uint8_t txWriteIndex = 0;
 uint8_t txPin = NOT_A_PIN;
 bool txInverseLogic = true;
-uint8_t txBytesInLine = 10;
+uint8_t txBytesInLine = 0;
 bool txSlowMode = false;
 RedEyeClass::Mode mode = RedEyeClass::ModeDisabled;
 
@@ -111,13 +111,13 @@ size_t RedEyeClass::write(uint8_t toSend) {
 	}
 
 	if (txSlowMode) {
-		txBytesInLine++;
 		if (toSend == 4 || toSend == 10) { // Newlines
 			txBytesInLine = 0;
-		}
-
-		if (txBytesInLine > 24) {
-			write('\n');
+		} else {
+			if (txBytesInLine >= 24) {
+				write('\n');
+			}
+			txBytesInLine++;
 		}
 	}
 
