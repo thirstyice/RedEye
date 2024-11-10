@@ -33,12 +33,9 @@ void RedEyeClass::flush() {
 
 void txUpdateLineTimes() {
 	if (txSlowMode == true) {
-		while ((millis() - lastLineTime) > 2000) {
+		while (((millis() - lastLineTime) > 2000) && slowSendLinesAvailable<4) {
 			lastLineTime += 2000;
 			slowSendLinesAvailable ++;
-		}
-		if (slowSendLinesAvailable > 4) {
-			slowSendLinesAvailable = 4;
 		}
 	} else {
 		slowSendLinesAvailable = 128;
