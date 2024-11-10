@@ -20,8 +20,7 @@ volatile uint8_t txSendNextBurstAfter = 0;
 volatile uint8_t txSendNextBitAfter = 0;
 volatile bool txWaitingBeforeBurst = false;
 volatile uint16_t txByteToSend = 0;
-unsigned long lastLineTime = 0;
-volatile uint8_t slowSendLinesAvailable = 4;
+volatile unsigned long nextCharTime = 0;
 
 void RedEyeClass::flush() {
 	while (txWriteIndex != txReadIndex) {
@@ -29,17 +28,6 @@ void RedEyeClass::flush() {
 	}
 	while (txBitsToSend>0);
 	delay(2); // Finish the last bit
-}
-
-void txUpdateLineTimes() {
-	if (txSlowMode == true) {
-		while (((millis() - lastLineTime) > 2000) && slowSendLinesAvailable<4) {
-			lastLineTime += 2000;
-			slowSendLinesAvailable ++;
-		}
-	} else {
-		slowSendLinesAvailable = 128;
-	}
 }
 
 void txSendBurst() {
@@ -92,7 +80,7 @@ void txPulse() {
 }
 
 void txLoadNextByte() {
-	if (slowSendLinesAvailable == 0 || txByteToSend!=0 || txReadIndex==txWriteIndex) {
+	if (txByteToSend!=0 || txReadIndex==txWriteIndex || (txSlowMode && millis() < nextCharTime)) {
 		return;
 	}
 	txByteToSend = txBuffer[txReadIndex];
@@ -103,9 +91,7 @@ void txLoadNextByte() {
 		return;
 	}
 	byte character = txByteToSend;
-	if ((character == 4) || (character == 10)) { // Newlines
-		slowSendLinesAvailable --;
-	}
+	nextCharTime = millis() + 75;
 	txBitsToSend = 15;
 	return;
 }

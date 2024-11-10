@@ -42,6 +42,5 @@ void txPulse();
 void txSendBurst();
 void txBitInterrupt();
 void txLoadNextByte();
-void txUpdateLineTimes();
 
 }

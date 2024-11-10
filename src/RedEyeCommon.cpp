@@ -107,14 +107,8 @@ void RedEyeClass::setMode(Mode newMode) {
 }
 
 size_t RedEyeClass::write(uint8_t toSend) {
-	txUpdateLineTimes();
 	if (toSend == 0) {
 		return 1; // Yep, we definitely sent that nothing!
-	}
-	txBytesInCurrentLine++;
-	if ((toSend == 4)|| (toSend == 10)) {
-		txBytesInCurrentLine = 0;
-		txLastLineFeed = toSend;
 	}
 
 	uint16_t errorCorrection = 0;
