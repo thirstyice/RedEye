@@ -28,8 +28,7 @@ volatile uint8_t txReadIndex = 0;
 uint8_t txWriteIndex = 0;
 uint8_t txPin = NOT_A_PIN;
 bool txInverseLogic = true;
-volatile uint8_t txBytesInCurrentLine = 0;
-byte txLastLineFeed = 10;
+uint8_t txBytesInLine = 10;
 bool txSlowMode = false;
 RedEyeClass::Mode mode = RedEyeClass::ModeDisabled;
 
@@ -109,6 +108,17 @@ void RedEyeClass::setMode(Mode newMode) {
 size_t RedEyeClass::write(uint8_t toSend) {
 	if (toSend == 0) {
 		return 1; // Yep, we definitely sent that nothing!
+	}
+
+	if (txSlowMode) {
+		txBytesInLine++;
+		if (toSend == 4 || toSend == 10) { // Newlines
+			txBytesInLine = 0;
+		}
+
+		if (txBytesInLine > 24) {
+			write('\n');
+		}
 	}
 
 	uint16_t errorCorrection = 0;
