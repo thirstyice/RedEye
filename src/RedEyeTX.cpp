@@ -20,6 +20,7 @@ volatile uint8_t txSendNextBurstAfter = 0;
 volatile uint8_t txSendNextBitAfter = 0;
 volatile bool txWaitingBeforeBurst = false;
 volatile uint16_t txByteToSend = 0;
+volatile uint8_t txCharsAvailable = 200;
 volatile unsigned long nextCharTime = 0;
 
 void RedEyeClass::flush() {
@@ -80,7 +81,18 @@ void txPulse() {
 }
 
 void txLoadNextByte() {
-	if (txByteToSend!=0 || txReadIndex==txWriteIndex || (txSlowMode && (millis() < nextCharTime))) {
+	if (txSlowMode) {
+		while (millis() > nextCharTime && txCharsAvailable < 200) {
+			nextCharTime += 75;
+			txCharsAvailable++;
+		}
+		if (txCharsAvailable >= 200) {
+			nextCharTime = millis() + 75;
+		}
+	} else {
+		txCharsAvailable = 200;
+	}
+	if (txByteToSend!=0 || txReadIndex==txWriteIndex || txCharsAvailable==0) {
 		return;
 	}
 	txByteToSend = txBuffer[txReadIndex];
@@ -90,7 +102,7 @@ void txLoadNextByte() {
 	if (txByteToSend==0) {
 		return;
 	}
-	nextCharTime = millis() + 75;
+	txCharsAvailable --;
 	txBitsToSend = 15;
 	return;
 }
