@@ -90,7 +90,6 @@ void txLoadNextByte() {
 	if (txByteToSend==0) {
 		return;
 	}
-	byte character = txByteToSend;
 	nextCharTime = millis() + 75;
 	txBitsToSend = 15;
 	return;
