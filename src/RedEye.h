@@ -64,9 +64,7 @@ extern redeye::RedEyeClass RedEye;
 #define _REDEYE_ID(x, y, z) __REDEYE_ID(x, y, z)
 #define REDEYE_ID(x, y) _REDEYE_ID(x, REDEYE_USE_TIMER, y)
 
-#define REDEYE_16BIT REDEYE_ID(TCNT,H)
-
-#if defined(REDEYE_16BIT)
+#if REDEYE_ID(TCNT,H1)
 	#define REDEYE_TIMER_MAX UINT16_MAX
 #else
 	#define REDEYE_TIMER_MAX UINT8_MAX
@@ -105,4 +103,6 @@ extern redeye::RedEyeClass RedEye;
 	defined(REDEYE_TIMSK)\
 )
 	#error "RedEye Missing needed registers; does the selected timer exist?"
+	// This error will probably never be thrown, even when it should be
+	// But I don't know how to fix that yet
 #endif
