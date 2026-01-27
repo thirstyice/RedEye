@@ -34,9 +34,6 @@ bool addToRxBuffer(byte character) {
 }
 
 void rxInterruptHandler() {
-	if ((mode&RedEyeClass::ModeRx) == 0) {
-		return;
-	}
 	if (rxPulses == 0) {
 		// Start of burst
 		rxBurstTimer = 10;

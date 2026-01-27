@@ -17,8 +17,6 @@
 #define REDEYE_RX_BUFFER_SIZE 16
 #define REDEYE_TX_BUFFER_SIZE 16
 
-// #define REDEYE_USE_TIMER 0
-
 #ifndef REDEYE_USE_TIMER
 	#define REDEYE_USE_TIMER 1
 #endif
@@ -120,12 +118,14 @@ extern redeye::RedEyeClass RedEye;
 	#define REDEYE_TIMER_MAX UINT8_MAX
 #endif
 
-#define REDEYE_PRESCALER 0
 #define REDEYE_PULSE_LEN F_CPU/32768U
 
 #if REDEYE_PULSE_LEN >= REDEYE_TIMER_MAX
-	#define REDEYE_PRESCALER 1U
+	#undef REDEYE_PULSE_LEN
 	#define REDEYE_PULSE_LEN F_CPU / 8 / 32768U
+	#define REDEYE_PRESCALER 1U
+#else
+	#define REDEYE_PRESCALER 0
 #endif
 
 #if REDEYE_PULSE_LEN >= REDEYE_TIMER_MAX
@@ -143,7 +143,6 @@ extern redeye::RedEyeClass RedEye;
 #if REDEYE_TIMER_TCCRC
 	#define REDEYE_TCCRC REDEYE_ID(TCCR,C)
 #endif
-#define REDEYE_ICR REDEYE_ID(ICR, )
 #ifdef TIMSK
 	#define REDEYE_TIMSK TIMSK
 #else

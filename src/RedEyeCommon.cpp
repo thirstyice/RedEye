@@ -67,16 +67,14 @@ void RedEyeClass::begin(const uint8_t _rxPin, const uint8_t _txPin, bool _rxInve
 	txInverseLogic = _txInverseLogic;
 	rxInverseLogic = _rxInverseLogic;
 
-	REDEYE_TCCRA = 0b00000010; // Fast PWM, TOP is ICRn
-	REDEYE_TCCRB = 0b00011001 + REDEYE_PRESCALER; // Fast PWM
+	REDEYE_TCCRA = 0b00000011; // Fast PWM, TOP is OCRnA
 #ifdef REDEYE_TCCRC
 	REDEYE_TCCRC = 0b00000000; // Just in case
 #endif
-	REDEYE_ICR = REDEYE_PULSE_LEN;
-	REDEYE_PWM_REG = REDEYE_PULSE_LEN + 1; // Never reached, so 0% duty cycle
-	REDEYE_PULSE_REG = 0;
+	REDEYE_TCCRB = 0b00011001 + REDEYE_PRESCALER; // Fast PWM
 
-	pinMode(txPin, OUTPUT);
+	REDEYE_PWM_REG = REDEYE_PULSE_LEN;
+	REDEYE_PULSE_REG = REDEYE_PULSE_LEN / 2;
 }
 
 void RedEyeClass::setSlowTx(bool newMode) {
@@ -85,22 +83,24 @@ void RedEyeClass::setSlowTx(bool newMode) {
 
 void RedEyeClass::setMode(Mode newMode) {
 	if (mode==0 && newMode!=0) {
-		REDEYE_TIMSK = REDEYE_TIMSK | _BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT);
-		if (rxInterrupt != NOT_AN_INTERRUPT) {
-			attachInterrupt(rxInterrupt, rxInterruptHandler, RISING - rxInverseLogic);
-		}
+		REDEYE_TIMSK &= ~( 1 << REDEYE_PWM_EN_BIT);
+		REDEYE_TIMSK |= (1 << REDEYE_PULSE_EN_BIT);
+	}
+	if (((mode&ModeRx) ==0) && ((newMode&ModeRx) !=0)){
+		attachInterrupt(rxInterrupt, rxInterruptHandler, rxInverseLogic?FALLING:RISING);
+	}
+	if (((newMode&ModeRx) == 0) && ((mode&ModeRx) != 0)) {
+		detachInterrupt(rxInterrupt);
+	}
+	if (((mode&ModeTx) == 0) && ((newMode&ModeTx) != 0)) {
+		pinMode(txPin, OUTPUT);
 	}
 	if (((newMode&ModeTx) == 0) && ((mode&ModeTx) != 0)) {
-		flush(); // Finish what we're currently transmitting before switching to RX
+		flush(); // Finish what we're currently transmitting before disabling TX
+		digitalWrite(txPin, txInverseLogic?HIGH:LOW);
 	}
 	if (newMode==0 && mode!=0) {
-		if (rxInterrupt != NOT_AN_INTERRUPT) {
-			detachInterrupt(rxInterrupt);
-		}
-		REDEYE_TIMSK = REDEYE_TIMSK & ~(_BV(REDEYE_PULSE_EN_BIT) | _BV(REDEYE_PWM_EN_BIT));
-		if (txPin != NOT_A_PIN) {
-			digitalWrite(txPin, txInverseLogic);
-		}
+		REDEYE_TIMSK &= ~((1<<REDEYE_PULSE_EN_BIT) | (1<<REDEYE_PWM_EN_BIT));
 	}
 	mode = newMode;
 }
