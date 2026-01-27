@@ -64,7 +64,7 @@ extern redeye::RedEyeClass RedEye;
 #define _REDEYE_ID(x, y, z) __REDEYE_ID(x, y, z)
 #define REDEYE_ID(x, y) _REDEYE_ID(x, REDEYE_USE_TIMER, y)
 
-// Figure out what kind of timers we have
+// Which timers exist?
 #ifdef TCNT0
 	#define REDEYE_TIMER_0_AVAIL 1
 #endif
@@ -91,8 +91,23 @@ extern redeye::RedEyeClass RedEye;
 	#define REDEYE_TIMER_3_16BIT 1
 #endif
 
+// Whiich timers have TCCRxC?
+#ifdef TCCR0C
+	#define REDEYE_TIMER_0_TCCRC 1
+#endif
+#ifdef TCCR1C
+	#define REDEYE_TIMER_1_TCCRC 1
+#endif
+#ifdef TCCR2C
+	#define REDEYE_TIMER_2_TCCRC 1
+#endif
+#ifdef TCCR3C
+	#define REDEYE_TIMER_3_TCCRC 1
+#endif
+
 #define REDEYE_TIMER_AVAIL REDEYE_ID(REDEYE_TIMER_, _AVAIL)
 #define REDEYE_TIMER_16BIT REDEYE_ID(REDEYE_TIMER_, _16BIT)
+#define REDEYE_TIMER_TCCRC REDEYE_ID(REDEYE_TIMER_, _TCCRC)
 
 #if REDEYE_TIMER_AVAIL != 1
 	#error "Selected timer does not exist!"
@@ -118,7 +133,9 @@ extern redeye::RedEyeClass RedEye;
 #define REDEYE_PULSE_VECT REDEYE_ID(TIMER,_COMPB_vect)
 #define REDEYE_TCCRA REDEYE_ID(TCCR,A)
 #define REDEYE_TCCRB REDEYE_ID(TCCR,B)
-#define REDEYE_TCCRC REDEYE_ID(TCCR,C)
+#if REDEYE_TIMER_TCCRC
+	#define REDEYE_TCCRC REDEYE_ID(TCCR,C)
+#endif
 #define REDEYE_ICR REDEYE_ID(ICR, )
 #ifdef TIMSK
 	#define REDEYE_TIMSK TIMSK
