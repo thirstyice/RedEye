@@ -66,10 +66,14 @@ extern redeye::RedEyeClass RedEye;
 
 #if REDEYE_ID(TCNT,H1)
 	#define REDEYE_TIMER_MAX UINT16_MAX
-#else
+#elif REDEYE_ID(TCNT, )
 	#define REDEYE_TIMER_MAX UINT8_MAX
+#else
+	#error "Selected timer does not exist!"
 #endif
+
 #define REDEYE_PULSE_LEN F_CPU/32768U
+
 #if REDEYE_PULSE_LEN >= REDEYE_TIMER_MAX
 	#error "Unsupported timer / clock speed combination!"
 #endif
@@ -88,21 +92,4 @@ extern redeye::RedEyeClass RedEye;
 	#define REDEYE_TIMSK TIMSK
 #else
 	#define REDEYE_TIMSK REDEYE_ID(TIMSK, )
-#endif
-
-#if !(\
-	defined(REDEYE_PWM_REG) &&\
-	defined(REDEYE_PWM_EN_BIT) &&\
-	defined(REDEYE_PWM_VECT) &&\
-	defined(REDEYE_PULSE_REG) &&\
-	defined(REDEYE_PULSE_EN_BIT) &&\
-	defined(REDEYE_PULSE_VECT) &&\
-	defined(REDEYE_TCCRA) &&\
-	defined(REDEYE_TCCRB) &&\
-	defined(REDEYE_ICR) &&\
-	defined(REDEYE_TIMSK)\
-)
-	#error "RedEye Missing needed registers; does the selected timer exist?"
-	// This error will probably never be thrown, even when it should be
-	// But I don't know how to fix that yet
 #endif
