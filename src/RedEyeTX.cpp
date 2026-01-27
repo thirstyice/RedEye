@@ -60,11 +60,9 @@ void txBitInterrupt() {
 
 void txPulse() {
 	if (txPulsesToSend == 0) {
-		REDEYE_PWM_REG = REDEYE_PULSE_LEN + 1;
-		// Duty cycle = 0%
+		REDEYE_TIMSK &= ~(1<<REDEYE_PWM_EN_BIT);
 	} else {
-		REDEYE_PWM_REG = REDEYE_PULSE_LEN / 2;
-		// Duty cycle = 50%
+		REDEYE_TIMSK |= (1<<REDEYE_PWM_EN_BIT);
 		txPulsesToSend--;
 	}
 	if (txSendNextBitAfter == 0) {
