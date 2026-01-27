@@ -78,6 +78,7 @@ extern redeye::RedEyeClass RedEye;
 	#define REDEYE_TIMER_3_AVAIL 1
 #endif
 
+// Which timers are 16bit?
 #ifdef TCNT0H
 	#define REDEYE_TIMER_0_16BIT 1
 #endif
@@ -119,7 +120,13 @@ extern redeye::RedEyeClass RedEye;
 	#define REDEYE_TIMER_MAX UINT8_MAX
 #endif
 
+#define REDEYE_PRESCALER 0
 #define REDEYE_PULSE_LEN F_CPU/32768U
+
+#if REDEYE_PULSE_LEN >= REDEYE_TIMER_MAX
+	#define REDEYE_PRESCALER 1U
+	#define REDEYE_PULSE_LEN F_CPU / 8 / 32768U
+#endif
 
 #if REDEYE_PULSE_LEN >= REDEYE_TIMER_MAX
 	#error "Unsupported timer / clock speed combination!"

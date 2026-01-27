@@ -68,7 +68,7 @@ void RedEyeClass::begin(const uint8_t _rxPin, const uint8_t _txPin, bool _rxInve
 	rxInverseLogic = _rxInverseLogic;
 
 	REDEYE_TCCRA = 0b00000010; // Fast PWM, TOP is ICRn
-	REDEYE_TCCRB = 0b00011001; // Fast PWM, Clk/1
+	REDEYE_TCCRB = 0b00011001 + REDEYE_PRESCALER; // Fast PWM
 #ifdef REDEYE_TCCRC
 	REDEYE_TCCRC = 0b00000000; // Just in case
 #endif
