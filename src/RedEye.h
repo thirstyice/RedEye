@@ -17,7 +17,7 @@
 #define REDEYE_RX_BUFFER_SIZE 16
 #define REDEYE_TX_BUFFER_SIZE 16
 
-// #define REDEYE_USE_TIMER 3
+// #define REDEYE_USE_TIMER 0
 
 #ifndef REDEYE_USE_TIMER
 	#define REDEYE_USE_TIMER 1
@@ -64,12 +64,44 @@ extern redeye::RedEyeClass RedEye;
 #define _REDEYE_ID(x, y, z) __REDEYE_ID(x, y, z)
 #define REDEYE_ID(x, y) _REDEYE_ID(x, REDEYE_USE_TIMER, y)
 
-#if REDEYE_ID(TCNT,H1)
-	#define REDEYE_TIMER_MAX UINT16_MAX
-#elif REDEYE_ID(TCNT, )
-	#define REDEYE_TIMER_MAX UINT8_MAX
-#else
+// Figure out what kind of timers we have
+#ifdef TCNT0
+	#define REDEYE_TIMER_0_AVAIL 1
+#endif
+#ifdef TCNT1
+	#define REDEYE_TIMER_1_AVAIL 1
+#endif
+#ifdef TCNT2
+	#define REDEYE_TIMER_2_AVAIL 1
+#endif
+#ifdef TCNT3
+	#define REDEYE_TIMER_3_AVAIL 1
+#endif
+
+#ifdef TCNT0H
+	#define REDEYE_TIMER_0_16BIT 1
+#endif
+#ifdef TCNT1H
+	#define REDEYE_TIMER_1_16BIT 1
+#endif
+#ifdef TCNT2H
+	#define REDEYE_TIMER_2_16BIT 1
+#endif
+#ifdef TCNT3H
+	#define REDEYE_TIMER_3_16BIT 1
+#endif
+
+#define REDEYE_TIMER_AVAIL REDEYE_ID(REDEYE_TIMER_, _AVAIL)
+#define REDEYE_TIMER_16BIT REDEYE_ID(REDEYE_TIMER_, _16BIT)
+
+#if REDEYE_TIMER_AVAIL != 1
 	#error "Selected timer does not exist!"
+#endif
+
+#if REDEYE_TIMER_16BIT == 1
+	#define REDEYE_TIMER_MAX UINT16_MAX
+#else
+	#define REDEYE_TIMER_MAX UINT8_MAX
 #endif
 
 #define REDEYE_PULSE_LEN F_CPU/32768U
